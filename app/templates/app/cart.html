@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cart</title>
+
+    <style>
+        body {
+            padding: 5px;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+</head>
+
+
+<body>
+
+    <!-- navbar  -->
+    <nav class="navbar bg-body-tertiary">
+        <div class="container-fluid">
+            <span class="navbar-brand">Hello {{request.user.get_full_name}}</span>
+            <a href="{% url 'user_logout' %}" style="text-decoration: none;" class="d-flex" role="search">
+                <button class="btn btn-outline-success" type="submit">LOGOUT</button>
+            </a>
+        </div>
+    </nav>
+    
+
+    <br>
+
+    {% if cart_items %}
+    {% for items in cart_items %}
+    <div class="card mb-3" style="max-width: 540px;">
+        <div class="row g-0">
+            <div class="col-md-4">
+                <img src="{{ items.product.product_img.url }}" class="img-fluid rounded-start"
+                    alt="image for {{items.product.title}}">
+
+            </div>
+            <div class="col-md-8">
+                <div class="card-body">
+                    <h5 class="card-title">{{items.product.title}}</h5>
+                    <p class="card-text">{{items.product.description}}</p>
+                    <p class="card-text">{{items.product.price}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+        {% endfor %}
+        <p class="card-text"><span style="font-weight:500;">Total: </span>{{total}}</p>
+        <a href="{% url 'products' %}">Back to products</a>
+        {% else %}
+        <h2>Your cart is empty click here to <a href="{% url 'products' %}">Add products to cart</a>
+            <h2>
+                {% endif %}
+
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+                    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+                    crossorigin="anonymous"></script>
+</body>
+
+</html>

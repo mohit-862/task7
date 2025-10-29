@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Addresslist</title>
+
+    <style>
+        body {
+            padding: 5px;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+</head>
+
+
+<body>
+    <!-- Navbar -->
+
+    <nav class="navbar bg-body-tertiary">
+        <div class="container-fluid">
+            <span class="navbar-brand">Hello {{request.user.get_full_name}}</span>
+            <a href="{% url 'add_address' %}" style="text-decoration: none;" class="d-flex">
+                <button class="btn btn-outline-success" type="submit">Add address</button>
+            </a>
+            <a href="{% url 'user_logout' %}" style="text-decoration: none;" class="d-flex">
+                <button class="btn btn-outline-success" type="submit">LOGOUT</button>
+            </a>
+        </div>
+    </nav>
+    <br>
+
+
+
+    <!-- address -->
+     {% if addresslist %}
+        <div class="list-group">
+            {% for address in addresslist %}
+              <button type="button" class="list-group-item list-group-item-action">{{address.address}} {{address.city}} {{address.state}} {{address.pincode}}</button>
+              <a href="{% url 'edit_address' address.id %}" style="text-decoration: none;" class="">
+                  Edit
+                </a>
+                <a href="{% url 'delete_address' address.id %}" style="text-decoration: none;" class="">
+                    Delete
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
