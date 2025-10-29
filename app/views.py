@@ -228,11 +228,10 @@ def cart(request):
 @login_required(login_url='user_login')
 def add_to_wishlist(request, product_id):
     product = Product.objects.get(id=product_id)
-    try:
-        Wishlist.objects.create(user=request.user, product=product)
+    wishlist,created =  Wishlist.objects.get_or_create(user=request.user, product=product)
+    if created:
         messages.add_message(request,messages.INFO,f"{product.title} added to wishlist!")
-    except:
-        messages.add_message(request,messages.INFO,f"{product.title} cannot be added to wishlist!")    
+    messages.add_message(request,messages.INFO,f"{product.title} is already in wishlist!")    
     return redirect('wishlist')
 
 

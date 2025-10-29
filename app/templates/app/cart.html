@@ -45,12 +45,18 @@
                     <h5 class="card-title">{{items.product.title}}</h5>
                     <p class="card-text">{{items.product.description}}</p>
                     <p class="card-text">{{items.product.price}}</p>
+                    <p class="card-text">{{items.quantity}}</p>
+
                 </div>
             </div>
         </div>
     </div>
         {% endfor %}
         <p class="card-text"><span style="font-weight:500;">Total: </span>{{total}}</p>
+          <a href="#" style="text-decoration: none;" class="d-flex" role="search">
+                <button class="btn btn-primary" type="submit">Proceed to order</button>
+            </a>
+            <br>
         <a href="{% url 'products' %}">Back to products</a>
         {% else %}
         <h2>Your cart is empty click here to <a href="{% url 'products' %}">Add products to cart</a>
