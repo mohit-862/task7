@@ -57,7 +57,7 @@ class Cart(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     def _str_(self):
-        return f"{self.user.username}'s {self.quantity} {self.product.title}"
+        return f"{self.user.get_full_name()}'s {self.quantity} {self.product.title}"
 
 
 class Wishlist(models.Model):
@@ -65,7 +65,7 @@ class Wishlist(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     def _str_(self):
-        return f"{self.user.username}'s {self.product.title}"
+        return f"{self.user.get_full_name()}'s {self.product.title}"
 
 
 class Addresslist(models.Model):
@@ -76,4 +76,16 @@ class Addresslist(models.Model):
     pincode = models.CharField(max_length=6)
 
     def _str_(self):
-        return f"{self.full_name}'s {self.address}"
+        return f"{self.address} {self.city} {self.state} {self.pincode}"
+    
+
+
+class Order(models.Model):
+    user = models.ForeignKey(Customuser,on_delete=models.CASCADE)
+    total = models.DecimalField(decimal_places=2,max_digits=10)
+    shipping_address = models.CharField(max_length=150)
+    is_paid = models.BooleanField(default=False)
+    razorpay_order_id = models.CharField(max_length=100,null=True,blank=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()}'s order"

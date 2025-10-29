@@ -27,6 +27,13 @@
             </a>
         </div>
     </nav>
+     {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-info" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
     
 
     <br>
@@ -53,7 +60,7 @@
     </div>
         {% endfor %}
         <p class="card-text"><span style="font-weight:500;">Total: </span>{{total}}</p>
-          <a href="#" style="text-decoration: none;" class="d-flex" role="search">
+          <a href="{% url 'addresslist' %}" style="text-decoration: none;" class="d-flex" role="search">
                 <button class="btn btn-primary" type="submit">Proceed to order</button>
             </a>
             <br>

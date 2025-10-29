@@ -3,12 +3,16 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
+
 from task.settings import BASE_DIR
+from task import settings
+import razorpay
 import os
 
 # Create your views here.
-from .models import Customuser,Category,Product,Cart, Wishlist, Addresslist
+from .models import Customuser,Category,Product,Cart, Wishlist, Addresslist,Order
 
 
 
@@ -219,7 +223,8 @@ def cart(request):
     cart_items = Cart.objects.filter(user_id = request.user.id)
     total = 0
     for items in cart_items:
-        total += items.product.price * items.quantity        
+        total += items.product.price * items.quantity  
+    request.session['total'] = str(total)      
     return render(request, 'app/cart.html', {'cart_items': cart_items, 'total': total})
 
 
@@ -287,3 +292,61 @@ def delete_address(request, address_id):
     address.delete()
     messages.add_message(request,messages.INFO,"Address deleted successfully!!!")
     return redirect('addresslist')
+
+
+
+
+# ---------------------------------------payment ----------------------------------------------------
+
+client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
+
+
+
+@csrf_exempt
+def payment_mode(request,address_id):
+    address= Addresslist.objects.get(id=address_id)
+    request.session['address'] = f"{address.address} {address.city} {address.state} {address.pincode}"
+    total = float(request.session.get('total',500))
+    address = request.session.get('address')
+    print(total)
+    print(address)
+    data = { "amount": total*100, "currency": "INR",'payment_capture': 1 }
+    payment = client.order.create(data=data)
+    obj,created = Order.objects.get_or_create(user = request.user,total=total,shipping_address = address,razorpay_order_id=payment['id'])
+    print(obj.id,"----------------------------------------")
+    request.session['order'] = obj.id
+    print(request.session['order'],"----------------------------------")
+    print(type(request.session['order']),"---------------------------------------------")
+
+    context = {'order_id':payment['id'],'user':request.user,'total':total,'razor_pay_key_id':settings.KEY}
+    return render(request,'app/payment_mode.html',context)
+
+@csrf_exempt
+def order_success(request):
+    if request.method == 'POST':
+        order_id = request.POST['razorpay_order_id']
+        signature = request.POST['razorpa_signature']
+        obj = Order.objects.get(razorpay_order_id = order_id)
+        client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
+        try:
+            client.utility.verify_payment_signature({'razorpay_signature': signature})
+            obj = Order.objects.get(id = order_id)
+            obj.is_paid = True
+            obj.save()
+        except:
+            messages.add_message(request,messages.INFO,'Payment is not succesed try again!!')
+            redirect('cart')
+    
+    return render(request,'app/order_success.html')
+
+# def payment(request):
+#     total = float(request.session.get('total',500))
+#     address = request.session.get('address')
+#     print(total)
+#     print(address)
+
+#     data = { "amount": total*100, "currency": "INR",'payment_capture': 1 }
+#     payment = client.order.create(data=data)
+#     Order.objects.create(user = request.user,total=total,shipping_address = address)
+#     print(payment)
+#     return render(request,'app/payment.html',data)

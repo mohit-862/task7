@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import home,products,user_login,user_logout,user_register,product_details,add_products,seller_dashboard,delete_product,cart,add_to_cart,add_to_wishlist,wishlist
-from .views import add_address,addresslist,edit_address,delete_address
+from .views import add_address,addresslist,edit_address,delete_address,payment_mode,order_success
 
 urlpatterns = [
     path('',home,name="home"),
@@ -37,4 +37,10 @@ urlpatterns = [
     path('addresslist/', addresslist, name="addresslist"),
     path('edit_address/<int:address_id>', edit_address, name="edit_address"),
     path('delete_address/<int:address_id>', delete_address, name="delete_address"),
+
+
+    #payment
+    path('payment_mode/<int:address_id>',payment_mode,name='payment_mode'),
+    path('order_success/',order_success,name="order_success"),
+   
 ]

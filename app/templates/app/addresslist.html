@@ -10,6 +10,9 @@
         body {
             padding: 5px;
         }
+        a{
+            text-decoration: none;
+        }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
@@ -22,10 +25,10 @@
     <nav class="navbar bg-body-tertiary">
         <div class="container-fluid">
             <span class="navbar-brand">Hello {{request.user.get_full_name}}</span>
-            <a href="{% url 'add_address' %}" style="text-decoration: none;" class="d-flex">
+            <a href="{% url 'add_address' %}" class="d-flex">
                 <button class="btn btn-outline-success" type="submit">Add address</button>
             </a>
-            <a href="{% url 'user_logout' %}" style="text-decoration: none;" class="d-flex">
+            <a href="{% url 'user_logout' %}" class="d-flex">
                 <button class="btn btn-outline-success" type="submit">LOGOUT</button>
             </a>
         </div>
@@ -36,13 +39,14 @@
 
     <!-- address -->
      {% if addresslist %}
+     <p>Choose Address for Delivery :-</p>
         <div class="list-group">
             {% for address in addresslist %}
-              <button type="button" class="list-group-item list-group-item-action">{{address.address}} {{address.city}} {{address.state}} {{address.pincode}}</button>
-              <a href="{% url 'edit_address' address.id %}" style="text-decoration: none;" class="">
+              <a href="{% url 'payment_mode' address.id %}"><button type="button" class="list-group-item list-group-item-action">{{address.address}} {{address.city}} {{address.state}} {{address.pincode}}</button></a>
+              <a href="{% url 'edit_address' address.id %}">
                   Edit
                 </a>
-                <a href="{% url 'delete_address' address.id %}" style="text-decoration: none;" class="">
+                <a href="{% url 'delete_address' address.id %}">
                     Delete
                 </a>
             {% endfor %}
