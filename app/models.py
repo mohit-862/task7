@@ -86,6 +86,9 @@ class Order(models.Model):
     shipping_address = models.CharField(max_length=150)
     is_paid = models.BooleanField(default=False)
     razorpay_order_id = models.CharField(max_length=100,null=True,blank=True)
+    razorpay_payment_id = models.CharField(max_length=100,null=True,blank=True)
+    razorpay_signature = models.CharField(max_length=100,null=True,blank=True)
+    failure_reason = models.CharField(max_length=255,null=True,blank=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()}'s order"

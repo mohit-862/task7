@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-ou+-=(7lc(up4=%@k52r$o^p*c96u*kp*8od*ee(2t1$zl=hvo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1','layne-preoceanic-presagefully.ngrok-free.dev']
 
 AUTH_USER_MODEL = 'app.Customuser'
 
@@ -146,7 +146,18 @@ load_dotenv()
 KEY = os.getenv('MYKEY')
 SECRET_KEY = os.getenv('MYSECRET_KEY')
 
-CSRF_TRUSTED_ORIGINS = ["https://api.razorpay.com"]
+CSRF_TRUSTED_ORIGINS = ["https://layne-preoceanic-presagefully.ngrok-free.dev"]
+
+
+
+# celery setup
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+
+
 
 
 #email setup

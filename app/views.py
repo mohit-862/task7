@@ -1,18 +1,21 @@
 from django.shortcuts import render,redirect
-from django.http import HttpResponse
+from django.http import HttpResponse,JsonResponse,HttpResponseBadRequest
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
+import json
 
-from task.settings import BASE_DIR
-from task import settings
+
 import razorpay
 import os
 
 # Create your views here.
+from task import settings
+from task.settings import BASE_DIR
 from .models import Customuser,Category,Product,Cart, Wishlist, Addresslist,Order
+from app.task import confirmation_mail
 
 
 
@@ -302,6 +305,11 @@ client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
 
 
 
+
+    
+
+
+
 @csrf_exempt
 def payment_mode(request,address_id):
     address= Addresslist.objects.get(id=address_id)
@@ -319,34 +327,66 @@ def payment_mode(request,address_id):
     print(type(request.session['order']),"---------------------------------------------")
 
     context = {'order_id':payment['id'],'user':request.user,'total':total,'razor_pay_key_id':settings.KEY}
+  
     return render(request,'app/payment_mode.html',context)
+
+
 
 @csrf_exempt
 def order_success(request):
     if request.method == 'POST':
         order_id = request.POST['razorpay_order_id']
-        signature = request.POST['razorpa_signature']
-        obj = Order.objects.get(razorpay_order_id = order_id)
+        print(order_id)
+        payment_id = request.POST['razorpay_payment_id']
+        print(payment_id)
+        signature = request.POST['razorpay_signature']
+        print(signature)
+        
+        
         client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
+        data = {
+            'razorpay_order_id' :order_id,
+            'razorpay_payment_id':payment_id,
+            'razorpay_signature':signature
+        }
         try:
-            client.utility.verify_payment_signature({'razorpay_signature': signature})
-            obj = Order.objects.get(id = order_id)
+            client.utility.verify_payment_signature(data)
+            obj = Order.objects.get(razorpay_order_id = order_id)
+            print(obj)
+            print(obj.user)
+            print(obj.shipping_address)
+            obj.razorpay_payment_id = payment_id
+            obj.razorpay_signature = signature
             obj.is_paid = True
             obj.save()
+            messages.add_message(request,messages.INFO,'Payment is succeded')
         except:
-            messages.add_message(request,messages.INFO,'Payment is not succesed try again!!')
-            redirect('cart')
-    
+            messages.add_message(request,messages.INFO,'Payment fails try again!!')
+            return redirect('cart')
+        
+        confirmation_mail.delay(order_id) 
     return render(request,'app/order_success.html')
 
-# def payment(request):
-#     total = float(request.session.get('total',500))
-#     address = request.session.get('address')
-#     print(total)
-#     print(address)
 
-#     data = { "amount": total*100, "currency": "INR",'payment_capture': 1 }
-#     payment = client.order.create(data=data)
-#     Order.objects.create(user = request.user,total=total,shipping_address = address)
-#     print(payment)
-#     return render(request,'app/payment.html',data)
+# @csrf_exempt
+def payment_status(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON payload.")
+        print(data)
+        print("webhuuuuuuuuuuuuok activated")
+        # Perform different actions based on the event type
+        # event_type = data.get("event_type")
+
+        # if event_type == "payment_success":
+        #     handle_payment_success(data)
+        # elif event_type == "payment_failure":
+        #     handle_payment_failure(data)
+        # else:
+        #     return HttpResponseBadRequest("Unhandled event type.")
+
+        # # Acknowledge receipt of the webhook
+        return redirect('order_success')
+

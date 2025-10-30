@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import home,products,user_login,user_logout,user_register,product_details,add_products,seller_dashboard,delete_product,cart,add_to_cart,add_to_wishlist,wishlist
-from .views import add_address,addresslist,edit_address,delete_address,payment_mode,order_success
+from .views import add_address,addresslist,edit_address,delete_address,payment_mode,order_success,payment_status
 
 urlpatterns = [
     path('',home,name="home"),
@@ -42,5 +42,6 @@ urlpatterns = [
     #payment
     path('payment_mode/<int:address_id>',payment_mode,name='payment_mode'),
     path('order_success/',order_success,name="order_success"),
+    path('webhook/',payment_status,name='payment_status')
    
 ]
