@@ -27,10 +27,6 @@ SECRET_KEY = 'django-insecure-ou+-=(7lc(up4=%@k52r$o^p*c96u*kp*8od*ee(2t1$zl=hvo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1','layne-preoceanic-presagefully.ngrok-free.dev']
-
-AUTH_USER_MODEL = 'app.Customuser'
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -146,7 +142,16 @@ load_dotenv()
 KEY = os.getenv('MYKEY')
 SECRET_KEY = os.getenv('MYSECRET_KEY')
 
-CSRF_TRUSTED_ORIGINS = ["https://layne-preoceanic-presagefully.ngrok-free.dev"]
+
+
+#settings attributes
+
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000","https://layne-preoceanic-presagefully.ngrok-free.dev","https://api.razorpay.com"]
+
+
+ALLOWED_HOSTS = ['127.0.0.1','layne-preoceanic-presagefully.ngrok-free.dev']
+
+AUTH_USER_MODEL = 'app.Customuser'
 
 
 

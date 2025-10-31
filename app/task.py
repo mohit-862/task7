@@ -1,7 +1,7 @@
 from celery import shared_task
 import os
 from dotenv import load_dotenv
-from app.models import Order
+from app.models import Order,Customuser
 from django.core.mail import send_mail
 
 
@@ -16,6 +16,17 @@ def confirmation_mail(order_id):
                 """
     sender = os.getenv('MAIL')
     reciever = [obj.user.email]   
-
+    print("Mail sending")
     send_mail(subject,body,sender,reciever,fail_silently=False)
+    print("mail send")
     
+@shared_task
+def password_reset_mail(user_id):
+    obj = Customuser.objects.get(id = user_id)
+    subject = "Password changed successfully"
+    body = f"""password for profile {obj.username} is changed Successfully"""
+    sender = os.getenv('MAIL')
+    reciever = [obj.email]   
+    print("Mail sending")
+    send_mail(subject,body,sender,reciever,fail_silently=False)
+    print("mail send")

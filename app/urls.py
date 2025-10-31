@@ -1,13 +1,16 @@
 from django.urls import path
 from .views import home,products,user_login,user_logout,user_register,product_details,add_products,seller_dashboard,delete_product,cart,add_to_cart,add_to_wishlist,wishlist
-from .views import add_address,addresslist,edit_address,delete_address,payment_mode,order_success,payment_status
+from .views import add_address,addresslist,edit_address,delete_address,payment_mode,order_success,payment_status,edit_profile,profile,change_password
 
 urlpatterns = [
     path('',home,name="home"),
 
     #user paths
-    path('products/',products,name="products"),
+    path('profile/<int:user_id>/',profile,name="profile"),
+    path('edit_profile/',edit_profile,name="edit_profile"),
+    path('change_password/',change_password,name="change_password"),
     path('product/<slug:slug>/',product_details,name="product_details"),
+    path('products/',products,name="products"),
 
 
     #seller_paths

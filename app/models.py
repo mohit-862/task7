@@ -8,6 +8,7 @@ from django.urls import reverse
 
 
 class Customuser(AbstractUser):
+    profile_img = models.ImageField(upload_to='images/',default='images/default.jpg')
     phone = models.PositiveBigIntegerField(null = True)
     role = models.CharField(max_length=10)
     def _str_(self):
@@ -87,8 +88,19 @@ class Order(models.Model):
     is_paid = models.BooleanField(default=False)
     razorpay_order_id = models.CharField(max_length=100,null=True,blank=True)
     razorpay_payment_id = models.CharField(max_length=100,null=True,blank=True)
-    razorpay_signature = models.CharField(max_length=100,null=True,blank=True)
-    failure_reason = models.CharField(max_length=255,null=True,blank=True)
+    failure_description = models.TextField(null=True,blank=True)
+    failure_reason = models.CharField(max_length=100,null=True,blank=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()}'s order"
+    
+
+
+
+# class Myorder(models.Model):
+#     user = models.ForeignKey(Customuser,on_delete=models.CASCADE)
+#     order = models.ForeignKey(Order,on_delete=models.CASCADE)
+#     product = models.ForeignKey(Product,on_delete=models.CASCADE)
+
+#     def __str__(self):
+#         return f"{self.user.get_full_name()}'s payed order list"

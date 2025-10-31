@@ -10,6 +10,7 @@
         body {
             padding: 5px;
         }
+        
     </style>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
@@ -21,7 +22,8 @@
 
     <nav class="navbar bg-body-tertiary">
         <div class="container-fluid">
-            <span class="navbar-brand">Hello {{request.user.get_full_name}}</span>
+            
+            <a href="{% url 'profile' request.user.id %}" style = "text-decoration: none;"><span class="navbar-brand">Hello {{request.user.get_full_name}}</span></a>
             <form class="d-flex" role="search" method="get" action="{% url 'products' %}">
                  {% csrf_token %}
                 <select class="form-select" name="filter" id="inputGroupSelect01">
@@ -61,13 +63,13 @@
 
 
     <!-- Products -->
-    <div class="row row-cols-1 row-cols-md-4 g-4" style="width: 50rem;">
+    <div class="row row-cols-1 row-cols-md-4 g-4" style="width:100%;">
         {% if page_obj %}
             {% for product in page_obj %}
-                <a href="{{product.get_absolute_url}}" style="text-decoration: none;">
-                    <div class="col">
+            <div class="col" style="width: 20%;">
+                        <a href="{{ product.get_absolute_url }}" style="text-decoration:none;">
                         <div class="card h-100">
-                            <img src="{{ product.product_img.url }}" class="card-img-top" alt="image for {{product.title}}" >
+                            <img src="{{ product.product_img.url }}" class="card-img-top" height="200px" alt="image for {{product.title}}" >
                             <div class="card-body">
                                 <h5 class="card-title">{{product.title}}</h5>
                                 <p class="card-text">{{product.description}}</p>
@@ -77,8 +79,8 @@
                                 <a href="{% url 'add_to_cart' product.id %}"><div type="submit" class="btn btn-primary">Add to cart</div></a>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
+                </div>
             {% endfor %}
         {% endif %}
     </div>

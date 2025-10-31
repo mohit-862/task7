@@ -15,7 +15,7 @@ import os
 from task import settings
 from task.settings import BASE_DIR
 from .models import Customuser,Category,Product,Cart, Wishlist, Addresslist,Order
-from app.task import confirmation_mail
+from app.task import confirmation_mail,password_reset_mail
 
 
 
@@ -49,13 +49,14 @@ def user_register(request):
         fname = request.POST['fname']
         lname = request.POST['lname']
         username = request.POST['username']
+        profile_img = request.POST['profile_image']
         email = request.POST['email']
         password = request.POST['password']
         phone = request.POST['phone']
         role  = request.POST['role']
         print(role)
 
-        user = Customuser(first_name=fname.capitalize(),last_name=lname.capitalize(),username=username,email=email,phone=phone,role=role)
+        user = Customuser(first_name=fname.capitalize(),last_name=lname.capitalize(),username=username,email=email,phone=phone,role=role,profile_img=profile_img)
         user.set_password(password)
         try:
             user.save()
@@ -69,6 +70,7 @@ def user_register(request):
 
 def user_login(request):
     if request.method == 'POST':
+        breakpoint()
         username = request.POST["username"]
         password = request.POST["password"]
         user = authenticate(request,username=username,password=password)
@@ -92,6 +94,85 @@ def user_logout(request):
 
 #---------------------------------------user---------------------------------------------------------------------------
 
+
+@login_required(login_url="user_login")
+def profile(request,user_id):
+    user = Customuser.objects.get(id = user_id)
+    return render(request,'app/profile.html',{'user':user})
+
+
+
+@login_required(login_url="user_login")
+def edit_profile(request):
+    user = Customuser.objects.get(id = request.user.id)
+    print(user.profile_img.url,"----------------------------------------------------------")
+    if request.method == "POST":
+        fname = request.POST['fname']
+        lname = request.POST['lname']
+        username = request.POST['username']
+        email = request.POST['email']
+        phone = request.POST['phone']
+
+        user.first_name = fname
+        user.last_name = lname
+        user.username = username
+        user.email = email
+        user.phone = phone
+        user.save()
+        messages.success(request, "profile updated successfully!")
+        return redirect('products')
+    return render(request,'app/edit_profile.html',{'user':user})
+
+@login_required(login_url="user_login")
+def change_password(request):
+    user = user = Customuser.objects.get(id = request.user.id)
+    if request.method == 'POST':
+        npassword = request.POST['npassword']
+        cpassword = request.POST['cpassword']
+        has_uppercase = False
+        has_lowercase = False
+        has_digit = False
+        has_special = False
+        if not npassword == cpassword:
+            messages.add_message(request,messages.INFO,"Both password field should be equal")
+            return redirect('change_password')
+        if (len(npassword) < 8 and len(npassword) > 20) and " " in npassword:
+            messages.add_message(request,messages.INFO,"Password should be 8 - 20 characters long and not have space")
+            return redirect('change_password')
+        
+        for ch in npassword:
+            if not has_uppercase and 65<=ord(ch)<=90:
+                has_uppercase = True
+            elif not has_lowercase and 97<=ord(ch)<=122:
+                has_lowercase = True
+            elif not has_digit and 48<=ord(ch)<=57:
+                has_digit = True
+            elif not has_special and ch in {'@','_','#','-'}:
+                has_special = True
+            
+        if not has_uppercase:
+            messages.add_message(request,messages.INFO,"Password should have a uppercase character")
+            return redirect('change_password')
+        if not has_lowercase:
+            messages.add_message(request,messages.INFO,"Password should have a lowercase character")
+            return redirect('change_password')
+        if not has_digit:
+            messages.add_message(request,messages.INFO,"Password should have a digit")
+            return redirect('change_password')
+        if not has_special:
+            messages.add_message(request,messages.INFO,"Password should have a special character")
+            return redirect('change_password')
+        else:
+            user.set_password(npassword)
+            password_reset_mail.delay(user.id)
+            user.save()
+            messages.add_message(request,messages.INFO,"Password changed successfully")
+            logout(request)
+            return redirect('user_login')
+    return render(request,'app/change_password.html',{'user':user})
+
+
+@login_required(login_url="user_login")
 def product_details(request,slug):
     product = Product.objects.get(slug = slug)
     context = {
@@ -110,16 +191,16 @@ def products(request):
         return redirect("user_login")
     
     categories = Category.objects.all() 
-    products = Product.objects.all()
+    products = Product.objects.all().order_by('id')
 
     query = request.GET.get('search', "")
     order = request.GET.get('filter', "")
     category = request.GET.get('category', "")
 
     if query:
-        products = products.filter(title__contains=query)
+        products = products.filter(title__contains=query).order_by('id')
     if category:
-        products = products.filter(category_id=category)
+        products = products.filter(category_id=category).order_by('id')
     if order == 'asc':
         products = products.order_by('price')
     elif order == 'desc':
@@ -304,14 +385,9 @@ def delete_address(request, address_id):
 client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
 
 
-
-
-    
-
-
-
 @csrf_exempt
 def payment_mode(request,address_id):
+    print("---------payment mode---------------------------------------------")
     address= Addresslist.objects.get(id=address_id)
     request.session['address'] = f"{address.address} {address.city} {address.state} {address.pincode}"
     total = float(request.session.get('total',500))
@@ -331,62 +407,126 @@ def payment_mode(request,address_id):
     return render(request,'app/payment_mode.html',context)
 
 
+# def cart_to_myorder(order_id):
+#     order_obj = Order.objects.get(razorpay_order_id = order_id)
+#     try:
+#         Myorder.objects.create(user = order_obj.user, order = order_obj)
+#     except:
+#         print("Myorder is not created ======================================================")
+
+
+
+
+
+
+def handle_payment_success(data):
+    print("===============payment success-===============")
+    order_id = data['payload']['payment']['entity']['order_id']
+    print(order_id)
+    obj = Order.objects.get(razorpay_order_id = order_id)
+    print(obj)
+    print(obj.user)
+    print(obj.shipping_address)
+    # obj.razorpay_payment_id = dict['razorpay_payment_id']
+    # obj.razorpay_signature = dict['razorpay_signature']
+    obj.razorpay_payment_id = data['payload']['payment']['entity']['id']
+    obj.is_paid = True
+    obj.save()
+    confirmation_mail.delay(order_id) 
+    # cart_to_myorder(order_id)
+    # messages.add_message(request,messages.INFO,'Payment is succeded')
+    print("===============payment success-===============")
+
+
+
+
+
+
+
+def handle_payment_failure(data):
+    print("===============payment failed-===============")
+    order_id = data['payload']['payment']['entity']['order_id']
+    obj = Order.objects.get(razorpay_order_id = order_id)
+    print(obj)
+    print(obj.user)
+    print(obj.shipping_address)
+    obj.is_paid = False
+    obj.failure_reason = data['payload']['payment']['entity']['error_reason']
+    obj.failure_description = data['payload']['payment']['entity']['error_description']
+    obj.save()
+    print("===============payment failed-===============")
+
+
+
+
+
 
 @csrf_exempt
 def order_success(request):
+    print("============order_suiccess=====================")
     if request.method == 'POST':
-        order_id = request.POST['razorpay_order_id']
+        order_id = request.POST.get('razorpay_order_id',None)
         print(order_id)
-        payment_id = request.POST['razorpay_payment_id']
-        print(payment_id)
-        signature = request.POST['razorpay_signature']
-        print(signature)
         
-        
-        client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
-        data = {
-            'razorpay_order_id' :order_id,
-            'razorpay_payment_id':payment_id,
-            'razorpay_signature':signature
-        }
-        try:
+        if order_id is not None:  
+            payment_id = request.POST['razorpay_payment_id']
+            print(payment_id)
+            signature = request.POST['razorpay_signature']
+            print(signature)
+            client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
+            data = {
+                'razorpay_order_id' :order_id,
+                'razorpay_payment_id':payment_id,
+                'razorpay_signature':signature
+            }
+            
             client.utility.verify_payment_signature(data)
             obj = Order.objects.get(razorpay_order_id = order_id)
             print(obj)
             print(obj.user)
             print(obj.shipping_address)
             obj.razorpay_payment_id = payment_id
-            obj.razorpay_signature = signature
             obj.is_paid = True
             obj.save()
             messages.add_message(request,messages.INFO,'Payment is succeded')
-        except:
+        else:   
             messages.add_message(request,messages.INFO,'Payment fails try again!!')
             return redirect('cart')
-        
-        confirmation_mail.delay(order_id) 
+        print("===============order success ===============================================")
     return render(request,'app/order_success.html')
 
 
-# @csrf_exempt
+
+
+
+@csrf_exempt
 def payment_status(request):
+    print("=======payment status=======================================")
     if request.method == "POST":
+        print("------------1-------------------")
         try:
+            print("--------2-------------")
             data = json.loads(request.body)
         except json.JSONDecodeError:
+            print("--------------3----------")
             return HttpResponseBadRequest("Invalid JSON payload.")
+        print("------4-------------------")
         print(data)
         print("webhuuuuuuuuuuuuok activated")
+        
+            
         # Perform different actions based on the event type
-        # event_type = data.get("event_type")
+        event = data.get("event")
+        print(event)
 
-        # if event_type == "payment_success":
-        #     handle_payment_success(data)
-        # elif event_type == "payment_failure":
-        #     handle_payment_failure(data)
-        # else:
-        #     return HttpResponseBadRequest("Unhandled event type.")
+        if event == "payment.captured":
+            handle_payment_success(data)
+        elif event== "payment.failed":
+            handle_payment_failure(data)
+        else:
+            return HttpResponseBadRequest("Unhandled event")
+    print("=======payment status=======================================")
+    return JsonResponse({'status':200})
+        
 
-        # # Acknowledge receipt of the webhook
-        return redirect('order_success')
 
