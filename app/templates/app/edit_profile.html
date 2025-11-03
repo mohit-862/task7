@@ -39,9 +39,9 @@
               <div class="row mb-4">
                 <label for="profile_image" class="col-sm-1 col-form-label"></label>
                 <div class="col-sm-4">
-                    <div id = "profile"><img id = "prof_img" src="{{ user.profile_img.url }}" alt="image" height="200px" width="200px"></div>
+                    <div id = "profile"><img id = "prof_img" src="{{ user.profile_image.url }}" alt="image" height="200px" width="200px"></div>
                     <input type="file" name="profile_image" class="form-control"
-                        id="profile_image" value="{{user.profile_image}}">
+                        id="profile_image" value="{{ user.profile_image.url }}">
                 </div>
             </div>
             

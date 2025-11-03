@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import home,products,user_login,user_logout,user_register,product_details,add_products,seller_dashboard,delete_product,cart,add_to_cart,add_to_wishlist,wishlist
 from .views import add_address,addresslist,edit_address,delete_address,payment_mode,order_success,payment_status,edit_profile,profile,change_password
+from .views import password_reset,create_new_password,new_password
 
 urlpatterns = [
     path('',home,name="home"),
@@ -23,6 +24,12 @@ urlpatterns = [
     path('user_login/',user_login,name="user_login"),
     path('user_logout/',user_logout,name="user_logout"),
     path('user_register/',user_register,name='user_register'),
+
+
+    #password_reset
+    path('password_reset/',password_reset,name='password_reset'),
+    path('create_new_password/<uuid:uuid>/<token>',create_new_password,name="create_new_password"),
+    path('new_password/<int:user_id>',new_password,name="new_password"),
 
 
     #cart

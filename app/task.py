@@ -21,7 +21,7 @@ def confirmation_mail(order_id):
     print("mail send")
     
 @shared_task
-def password_reset_mail(user_id):
+def password_changed_mail(user_id):
     obj = Customuser.objects.get(id = user_id)
     subject = "Password changed successfully"
     body = f"""password for profile {obj.username} is changed Successfully"""
@@ -30,3 +30,20 @@ def password_reset_mail(user_id):
     print("Mail sending")
     send_mail(subject,body,sender,reciever,fail_silently=False)
     print("mail send")
+
+
+@shared_task
+def password_reset_mail(username,email,uuid,token):
+    subject = "Password reset mail"
+    body = f"""Your password reset link for user {username} is :
+                https://layne-preoceanic-presagefully.ngrok-free.dev/create_new_password/{uuid}/{token}
+                link is valid only for 5 minutes.
+            """
+    sender = os.getenv('MAIL')
+    reciever = [email]   
+    send_mail(subject,body,sender,reciever,fail_silently=False)
+
+
+
+
+

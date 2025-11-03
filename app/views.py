@@ -2,10 +2,14 @@ from django.shortcuts import render,redirect
 from django.http import HttpResponse,JsonResponse,HttpResponseBadRequest
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 import json
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+
+
 
 
 import razorpay
@@ -15,7 +19,8 @@ import os
 from task import settings
 from task.settings import BASE_DIR
 from .models import Customuser,Category,Product,Cart, Wishlist, Addresslist,Order
-from app.task import confirmation_mail,password_reset_mail
+from app.task import confirmation_mail,password_changed_mail,password_reset_mail
+from app.decorators import seller_required,user_required
 
 
 
@@ -49,15 +54,17 @@ def user_register(request):
         fname = request.POST['fname']
         lname = request.POST['lname']
         username = request.POST['username']
-        profile_img = request.POST['profile_image']
+        profile_image = request.FILES.get('profile_image',None)
         email = request.POST['email']
         password = request.POST['password']
         phone = request.POST['phone']
         role  = request.POST['role']
         print(role)
 
-        user = Customuser(first_name=fname.capitalize(),last_name=lname.capitalize(),username=username,email=email,phone=phone,role=role,profile_img=profile_img)
+        user = Customuser(first_name=fname.capitalize(),last_name=lname.capitalize(),username=username,email=email,phone=phone,role=role,profile_image=profile_image)
         user.set_password(password)
+        if role == "seller":
+            user.is_staff = True
         try:
             user.save()
         except Exception as e:
@@ -70,7 +77,6 @@ def user_register(request):
 
 def user_login(request):
     if request.method == 'POST':
-        breakpoint()
         username = request.POST["username"]
         password = request.POST["password"]
         user = authenticate(request,username=username,password=password)
@@ -92,7 +98,7 @@ def user_logout(request):
     request.session.flush()
     return redirect("home")
 
-#---------------------------------------user---------------------------------------------------------------------------
+#---------------------------------------Profile pages(for user and seller both)---------------------------------------------------------------------------
 
 
 @login_required(login_url="user_login")
@@ -105,27 +111,66 @@ def profile(request,user_id):
 @login_required(login_url="user_login")
 def edit_profile(request):
     user = Customuser.objects.get(id = request.user.id)
-    print(user.profile_img.url,"----------------------------------------------------------")
+    print(user.profile_image.url,"----------------------------------------------------------")
     if request.method == "POST":
         fname = request.POST['fname']
         lname = request.POST['lname']
         username = request.POST['username']
         email = request.POST['email']
         phone = request.POST['phone']
+        profile_image = request.FILES.get('profile_image',None)
+
 
         user.first_name = fname
         user.last_name = lname
         user.username = username
         user.email = email
         user.phone = phone
+        user.profile_image = profile_image
         user.save()
         messages.success(request, "profile updated successfully!")
-        return redirect('products')
+        return redirect('profile')
     return render(request,'app/edit_profile.html',{'user':user})
 
-@login_required(login_url="user_login")
-def change_password(request):
-    user = user = Customuser.objects.get(id = request.user.id)
+
+def password_reset(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        email = request.POST['email']
+        try:
+            user = Customuser.objects.get(username = username,email = email)
+            print(user)
+        except Customuser.DoesNotExist:
+            messages.success(request,"username or email does not exist")
+            return redirect('password_reset')
+        
+        token_generator = PasswordResetTokenGenerator()
+        token = token_generator.make_token(user)
+
+        password_reset_mail.delay(user.username,user.email,user.uuid,token)
+        messages.add_message(request,messages.INFO,"A password reset mail has been sent to your registered email")
+        return redirect('home')
+    return render(request,'app/password_reset.html')
+
+
+def create_new_password(request,uuid,token):
+    try:
+        user = Customuser.objects.get(uuid = uuid)
+    except:
+        print("===user is not found from uuid")
+
+    token_generator = PasswordResetTokenGenerator()
+    result = token_generator.check_token(user,token)
+
+    if not result:
+        messages.add_message(request,messages.INFO,"token is not verified or the link is expired")
+        return redirect("home")
+    
+    return render(request,'app/new_password.html',{'user':user})
+
+
+def new_password(request,user_id):
+    user = Customuser.objects.get(id = user_id)
     if request.method == 'POST':
         npassword = request.POST['npassword']
         cpassword = request.POST['cpassword']
@@ -133,6 +178,61 @@ def change_password(request):
         has_lowercase = False
         has_digit = False
         has_special = False
+
+        if not npassword == cpassword:
+            messages.add_message(request,messages.INFO,"Both password field should be equal")
+            return redirect('change_password')
+        if (len(npassword) < 8 and len(npassword) > 20) and " " in npassword:
+            messages.add_message(request,messages.INFO,"Password should be 8 - 20 characters long and not have space")
+            return redirect('change_password')
+        
+        for ch in npassword:
+            if not has_uppercase and 65<=ord(ch)<=90:
+                has_uppercase = True
+            elif not has_lowercase and 97<=ord(ch)<=122:
+                has_lowercase = True
+            elif not has_digit and 48<=ord(ch)<=57:
+                has_digit = True
+            elif not has_special and ch in {'@','_','#','-'}:
+                has_special = True
+            
+        if not has_uppercase:
+            messages.add_message(request,messages.INFO,"Password should have a uppercase character")
+            return redirect('change_password')
+        if not has_lowercase:
+            messages.add_message(request,messages.INFO,"Password should have a lowercase character")
+            return redirect('change_password')
+        if not has_digit:
+            messages.add_message(request,messages.INFO,"Password should have a digit")
+            return redirect('change_password')
+        if not has_special:
+            messages.add_message(request,messages.INFO,"Password should have a special character {'@','_','#','-'}")
+            return redirect('change_password')
+        else:
+            user.set_password(npassword)
+            password_changed_mail.delay(user.id)
+            user.save()
+            messages.add_message(request,messages.INFO,"Password changed successfully")
+    return redirect('user_login')
+    
+
+
+@login_required(login_url="user_login")
+def change_password(request):
+    user = Customuser.objects.get(id = request.user.id)
+    if request.method == 'POST':
+        current_password = request.POST['current_password']
+        npassword = request.POST['npassword']
+        cpassword = request.POST['cpassword']
+        has_uppercase = False
+        has_lowercase = False
+        has_digit = False
+        has_special = False
+
+
+        if not user.check_password(current_password):
+            messages.add_message(request,messages.INFO,"the current password is incorrect")
+            return redirect('change_password')
         if not npassword == cpassword:
             messages.add_message(request,messages.INFO,"Both password field should be equal")
             return redirect('change_password')
@@ -164,7 +264,7 @@ def change_password(request):
             return redirect('change_password')
         else:
             user.set_password(npassword)
-            password_reset_mail.delay(user.id)
+            password_changed_mail.delay(user.id)
             user.save()
             messages.add_message(request,messages.INFO,"Password changed successfully")
             logout(request)
@@ -172,7 +272,12 @@ def change_password(request):
     return render(request,'app/change_password.html',{'user':user})
 
 
+
+# ----------------------------------------user-------------------------------------------------
+
+
 @login_required(login_url="user_login")
+@user_required
 def product_details(request,slug):
     product = Product.objects.get(slug = slug)
     context = {
@@ -184,12 +289,8 @@ def product_details(request,slug):
 
 
 @login_required(login_url="user_login")
+@user_required
 def products(request):
-    role = request.session['role']
-    if role != 'user':
-        messages.add_message(request,messages.INFO,f"Invalid user needs a user role to access the page")
-        return redirect("user_login")
-    
     categories = Category.objects.all() 
     products = Product.objects.all().order_by('id')
 
@@ -217,26 +318,21 @@ def products(request):
 
 
 @login_required(login_url="user_login")
+@seller_required
 def seller_dashboard(request):
-    role = request.session['role']
-    if role == 'seller':
-        context = all_products()
-        paginator = Paginator(context['products'],5)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        context.update({'page_obj':page_obj})
-        return render(request,'app/seller_dashboard.html',context)
-    else:
-        messages.add_message(request,messages.INFO,f"Invalid user needs a seller role to access the page")
-        return redirect("user_login")
+    context = all_products()
+    paginator = Paginator(context['products'],5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context.update({'page_obj':page_obj})
+    return render(request,'app/seller_dashboard.html',context)
 
 
 @login_required(login_url="user_login")
+@seller_required
 def add_products(request):
     context = all_category()
     role = request.session['role']
-    if request.method == 'GET' and role == 'seller':
-        return render(request,'app/add_products.html',context)
     if request.method == "POST":
         title = request.POST['title']
         description = request.POST['description']
@@ -252,46 +348,39 @@ def add_products(request):
             print(e)
             messages.add_message(request,messages.INFO,'Product might already exist')
         return redirect("add_products")
+    return render(request,'app/add_products.html',context)
     
 
 
 
 @login_required(login_url="user_login")
+@seller_required
 def delete_product(request,product_id):
-    role = request.session['role']
     user = request.session['name']
-    if role == 'seller':
-        obj = Product.objects.get(id = product_id)
-        context = all_products()
-        paginator = Paginator(context['products'],5)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-        context.update({'page_obj':page_obj,'user': user})
-        img_path = obj.product_img.path
-        try:
-            os.remove(img_path)
-            obj.delete()
-            messages.add_message(request,messages.INFO,"Product deleted successfully")
-        except FileNotFoundError:
-            messages.add_message(request,messages.INFO,"Product is not found")
-        except:
-            messages.add_message(request,messages.INFO,"Product is not deleted")
-       
-        return render(request,'app/seller_dashboard.html',context)
-    else:
-        messages.add_message(request,messages.INFO,f"Invalid user needs a seller role to access the page")
-        return redirect("user_login")
+    obj = Product.objects.get(id = product_id)
+    context = all_products()
+    paginator = Paginator(context['products'],5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context.update({'page_obj':page_obj,'user': user})
+    img_path = obj.product_img.path
+    try:
+        os.remove(img_path)
+        obj.delete()
+        messages.add_message(request,messages.INFO,"Product deleted successfully")
+    except FileNotFoundError:
+        messages.add_message(request,messages.INFO,"Product is not found")
+    except:
+        messages.add_message(request,messages.INFO,"Product is not deleted")
     
-
-
-
-    
-
+    return render(request,'app/seller_dashboard.html',context)
+        
 
 # ---------------------------------------------cart--------------------------------------------------------------------
 
 
 @login_required(login_url='user_login')
+@user_required
 def add_to_cart(request, product_id):
     product = Product.objects.get(id = product_id)
     cart_item,created = Cart.objects.get_or_create(user=request.user , product=product)
@@ -303,6 +392,7 @@ def add_to_cart(request, product_id):
 
 
 @login_required(login_url='user_login')
+@user_required
 def cart(request):
     cart_items = Cart.objects.filter(user_id = request.user.id)
     total = 0
@@ -315,6 +405,7 @@ def cart(request):
 # ---------------------------------------------whishlist--------------------------------------------------------------------
 
 @login_required(login_url='user_login')
+@user_required
 def add_to_wishlist(request, product_id):
     product = Product.objects.get(id=product_id)
     wishlist,created =  Wishlist.objects.get_or_create(user=request.user, product=product)
@@ -334,6 +425,7 @@ def wishlist(request):
 
 
 @login_required(login_url='user_login')
+@user_required
 def add_address(request):
     if request.method == 'POST':
         user = request.user
@@ -349,6 +441,7 @@ def add_address(request):
 
 
 @login_required(login_url='user_login')
+@user_required
 def addresslist(request):
     addresslist = Addresslist.objects.filter(user_id = request.user.id)
     return render(request, 'app/addresslist.html', {'addresslist': addresslist})
@@ -357,6 +450,7 @@ def addresslist(request):
 
 
 @login_required(login_url='user_login')
+@user_required
 def edit_address(request, address_id):
     address = Addresslist.objects.get(id=address_id)
     if request.method == 'POST':
@@ -371,6 +465,7 @@ def edit_address(request, address_id):
 
 
 @login_required(login_url='user_login')
+@user_required
 def delete_address(request, address_id):
     address = Addresslist.objects.get(id=address_id)
     address.delete()
@@ -388,7 +483,10 @@ client = razorpay.Client(auth=(settings.KEY, settings.SECRET_KEY))
 @csrf_exempt
 def payment_mode(request,address_id):
     print("---------payment mode---------------------------------------------")
-    address= Addresslist.objects.get(id=address_id)
+    try:
+        address= Addresslist.objects.get(id=address_id)
+    except:
+        return redirect('cart')
     request.session['address'] = f"{address.address} {address.city} {address.state} {address.pincode}"
     total = float(request.session.get('total',500))
     address = request.session.get('address')
@@ -455,7 +553,6 @@ def handle_payment_failure(data):
     obj.failure_description = data['payload']['payment']['entity']['error_description']
     obj.save()
     print("===============payment failed-===============")
-
 
 
 

@@ -16,7 +16,14 @@
 </head>
 
 <body>
-
+     {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-info" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    
     <div class="container px-4 text-center" style="margin-top:10%;">
         <div class="row gx-3">
             <div class="col">

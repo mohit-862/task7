@@ -21,12 +21,12 @@
 
     <nav class="navbar bg-body-tertiary">
         <div class="container-fluid">
-            <span class="navbar-brand">Hello {{request.user.get_full_name}}</span>
-            <a href="{% url 'user_logout' %}" style="text-decoration: none;" class="d-flex" role="search">
-                <button class="btn btn-outline-success" type="submit">LOGOUT</button>
-            </a>
+            <a href="{% url 'profile' request.user.id %}" style = "text-decoration: none;"><span class="navbar-brand">Hello {{request.user.get_full_name}}</span></a>
             <a href="{% url 'add_products' %}" style="text-decoration:none;" class="d-flex">
                 <button class="btn btn-outline-success" type="submit">Add Product</button>
+            </a>
+            <a href="{% url 'user_logout' %}" style="text-decoration: none;" class="d-flex" role="search">
+                <button class="btn btn-outline-success" type="submit">LOGOUT</button>
             </a>
         </div>
     </nav>

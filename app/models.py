@@ -2,13 +2,15 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.template.defaultfilters import slugify
 from django.urls import reverse
+import uuid
 
 
 # Create your models here.
 
 
 class Customuser(AbstractUser):
-    profile_img = models.ImageField(upload_to='images/',default='images/default.jpg')
+    uuid = models.UUIDField(default= uuid.uuid4, editable=False, unique = True)
+    profile_image = models.ImageField(upload_to='profile_images/')
     phone = models.PositiveBigIntegerField(null = True)
     role = models.CharField(max_length=10)
     def _str_(self):
