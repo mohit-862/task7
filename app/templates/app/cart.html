@@ -27,7 +27,7 @@
             </a>
         </div>
     </nav>
-     <!-- {% if messages %}
+     {% if messages %}
     {% for message in messages %}
     <div class="alert alert-info" role="alert">
         {{ message }}
@@ -35,7 +35,7 @@
     {% endfor %}
     {% endif %}
     
-     -->
+    
 
     <br>
 
@@ -54,7 +54,8 @@
                     <p class="card-text">{{items.product.description}}</p>
                     <p class="card-text">{{items.product.price}}</p>
                     <p class="card-text">{{items.quantity}}</p>
-
+                    <a href="{% url 'delete_from_cart' items.product.id %}"><div type="submit" class="btn btn-primary">Remove from cart</div></a>
+                    
                 </div>
             </div>
         </div>

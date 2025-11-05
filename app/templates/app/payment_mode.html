@@ -29,7 +29,7 @@
             <h5 class="card-title">Choose payment options</h5>
             <br>
             <div class="d-flex justify-content-evenly">
-                <a href="{% url 'order_success' %}"><button type="submit" class="w-auto btn btn-primary">cash on delivery</button></a>
+                <a href="{% url 'cod' order_id %}"><button type="submit" class="w-auto btn btn-primary">cash on delivery</button></a>
             <form method="post">
             {% csrf_token %}
             <button type="submit" class="w-auto btn btn-primary" id="rzp-button1">Online Now with Razorpay</button></div>

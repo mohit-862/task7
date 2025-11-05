@@ -18,7 +18,7 @@ import os
 # Create your views here.
 from task import settings
 from task.settings import BASE_DIR
-from .models import Customuser,Category,Product,Cart, Wishlist, Addresslist,Order
+from .models import Customuser,Category,Product,Cart, Wishlist, Addresslist,Order,Myorder
 from app.task import confirmation_mail,password_changed_mail,password_reset_mail
 from app.decorators import seller_required,user_required
 
@@ -276,8 +276,8 @@ def change_password(request):
 # ----------------------------------------user-------------------------------------------------
 
 
-@login_required(login_url="user_login")
 @user_required
+@login_required(login_url="user_login")
 def product_details(request,slug):
     product = Product.objects.get(slug = slug)
     context = {
@@ -288,8 +288,8 @@ def product_details(request,slug):
 
 
 
-@login_required(login_url="user_login")
 @user_required
+@login_required(login_url="user_login")
 def products(request):
     categories = Category.objects.all() 
     products = Product.objects.all().order_by('id')
@@ -317,8 +317,8 @@ def products(request):
 # -----------------------------selller------------------------------------------------------------------------------------
 
 
-@login_required(login_url="user_login")
 @seller_required
+@login_required(login_url="user_login")
 def seller_dashboard(request):
     context = all_products()
     paginator = Paginator(context['products'],5)
@@ -328,8 +328,8 @@ def seller_dashboard(request):
     return render(request,'app/seller_dashboard.html',context)
 
 
-@login_required(login_url="user_login")
 @seller_required
+@login_required(login_url="user_login")
 def add_products(request):
     context = all_category()
     role = request.session['role']
@@ -353,8 +353,8 @@ def add_products(request):
 
 
 
-@login_required(login_url="user_login")
 @seller_required
+@login_required(login_url="user_login")
 def delete_product(request,product_id):
     user = request.session['name']
     obj = Product.objects.get(id = product_id)
@@ -379,8 +379,8 @@ def delete_product(request,product_id):
 # ---------------------------------------------cart--------------------------------------------------------------------
 
 
-@login_required(login_url='user_login')
 @user_required
+@login_required(login_url='user_login')
 def add_to_cart(request, product_id):
     product = Product.objects.get(id = product_id)
     cart_item,created = Cart.objects.get_or_create(user=request.user , product=product)
@@ -388,11 +388,23 @@ def add_to_cart(request, product_id):
         cart_item.quantity += 1
     cart_item.save()
     messages.add_message(request,messages.INFO,f"{product.title} added to cart!")
+    return redirect('products')
+
+
+@user_required
+@login_required(login_url='user_login')
+def delete_from_cart(request, product_id):
+    cart_item = Cart.objects.get(user=request.user , product_id = product_id)
+    cart_item.delete()
+    messages.add_message(request,messages.INFO,f"item removed from cart!")
     return redirect('cart')
 
 
-@login_required(login_url='user_login')
+
+
+
 @user_required
+@login_required(login_url='user_login')
 def cart(request):
     cart_items = Cart.objects.filter(user_id = request.user.id)
     total = 0
@@ -404,15 +416,28 @@ def cart(request):
 
 # ---------------------------------------------whishlist--------------------------------------------------------------------
 
-@login_required(login_url='user_login')
 @user_required
+@login_required(login_url='user_login')
 def add_to_wishlist(request, product_id):
     product = Product.objects.get(id=product_id)
     wishlist,created =  Wishlist.objects.get_or_create(user=request.user, product=product)
     if created:
         messages.add_message(request,messages.INFO,f"{product.title} added to wishlist!")
-    messages.add_message(request,messages.INFO,f"{product.title} is already in wishlist!")    
+    else:
+        messages.add_message(request,messages.INFO,f"{product.title} is already in wishlist!")    
+    return redirect('products')
+
+
+
+@user_required
+@login_required(login_url='user_login')
+def delete_from_wishlist(request, product_id):
+    wishlist_item = Wishlist.objects.get(user = request.user , product_id = product_id)
+    wishlist_item.delete()
+    messages.add_message(request,messages.INFO,f"item removed from wishlist!")
     return redirect('wishlist')
+
+
 
 
 @login_required(login_url='user_login')
@@ -421,11 +446,14 @@ def wishlist(request):
     return render(request, 'app/wishlist.html', {'wishlist_items': wishlist_items})
 
 
+
+
 # ---------------------------------------------addresslist--------------------------------------------------------------------
 
 
-@login_required(login_url='user_login')
+
 @user_required
+@login_required(login_url='user_login')
 def add_address(request):
     if request.method == 'POST':
         user = request.user
@@ -449,8 +477,8 @@ def addresslist(request):
 
 
 
-@login_required(login_url='user_login')
 @user_required
+@login_required(login_url='user_login')
 def edit_address(request, address_id):
     address = Addresslist.objects.get(id=address_id)
     if request.method == 'POST':
@@ -464,14 +492,42 @@ def edit_address(request, address_id):
     return render(request, 'app/edit_address.html', {'address': address})
 
 
-@login_required(login_url='user_login')
 @user_required
+@login_required(login_url='user_login')
 def delete_address(request, address_id):
     address = Addresslist.objects.get(id=address_id)
     address.delete()
     messages.add_message(request,messages.INFO,"Address deleted successfully!!!")
     return redirect('addresslist')
 
+
+
+
+
+#------------------------------------myorder-----------------------------------------------------
+
+
+
+def myorder(request):
+    return redirect(request,'app/myorder.html')
+
+
+
+
+# def cart_to_myorder(order_id):
+#     order_obj = Order.objects.get(razorpay_order_id = order_id)
+#     print(order_obj.user)
+#     try:
+#         myorder = Myorder.objects.create(user = order_obj.user, order = order_obj)
+#         cart_items= Cart.objects.filter(user = order_obj.user)
+#         for item in cart_items:
+#             myorder.product.add()
+
+
+
+
+#     except:
+#         print("Myorder is not created ======================================================")
 
 
 
@@ -493,27 +549,35 @@ def payment_mode(request,address_id):
     print(total)
     print(address)
     data = { "amount": total*100, "currency": "INR",'payment_capture': 1 }
-    payment = client.order.create(data=data)
-    obj,created = Order.objects.get_or_create(user = request.user,total=total,shipping_address = address,razorpay_order_id=payment['id'])
-    print(obj.id,"----------------------------------------")
-    request.session['order'] = obj.id
-    print(request.session['order'],"----------------------------------")
-    print(type(request.session['order']),"---------------------------------------------")
 
-    context = {'order_id':payment['id'],'user':request.user,'total':total,'razor_pay_key_id':settings.KEY}
-  
+    try:
+        obj,created = Order.objects.get_or_create(user = request.user,total=total,shipping_address = address,pay_status='Pending')
+    except:
+        messages.add_message(request,messages.INFO,'you have more than one pending order with the same order try again after changing the details')
+        return redirect('cart')
+
+    if created:
+        payment = client.order.create(data=data)
+        obj.pay_status = 'Pending'
+        obj.razorpay_order_id = payment['id']
+        obj.save()
+
+
+    context = {'order_id':obj.razorpay_order_id,'user':request.user,'total':total,'razor_pay_key_id':settings.KEY}
     return render(request,'app/payment_mode.html',context)
 
 
-# def cart_to_myorder(order_id):
-#     order_obj = Order.objects.get(razorpay_order_id = order_id)
-#     try:
-#         Myorder.objects.create(user = order_obj.user, order = order_obj)
-#     except:
-#         print("Myorder is not created ======================================================")
 
 
-
+def cod(request,order_id):
+    print(order_id)
+    obj = Order.objects.get(razorpay_order_id = order_id)
+    print(obj)
+    obj.pay_mode = "Cash on Delivery"
+    obj.pay_status = "Success"
+    obj.save()
+    # cart_to_myorder(order_id)
+    return render(request,'app/order_success.html')
 
 
 
@@ -525,18 +589,14 @@ def handle_payment_success(data):
     print(obj)
     print(obj.user)
     print(obj.shipping_address)
-    # obj.razorpay_payment_id = dict['razorpay_payment_id']
-    # obj.razorpay_signature = dict['razorpay_signature']
     obj.razorpay_payment_id = data['payload']['payment']['entity']['id']
-    obj.is_paid = True
+    obj.pay_status = "Success"
+    obj.pay_mode = data['payload']['payment']['entity']['method']
     obj.save()
-    confirmation_mail.delay(order_id) 
+    # confirmation_mail.delay(order_id) 
     # cart_to_myorder(order_id)
-    # messages.add_message(request,messages.INFO,'Payment is succeded')
+    # # messages.add_message(request,messages.INFO,'Payment is succeded')
     print("===============payment success-===============")
-
-
-
 
 
 
@@ -548,7 +608,9 @@ def handle_payment_failure(data):
     print(obj)
     print(obj.user)
     print(obj.shipping_address)
-    obj.is_paid = False
+    obj.razorpay_payment_id = data['payload']['payment']['entity']['id']
+    obj.pay_status = "Failed"
+    obj.pay_mode = data['payload']['payment']['entity']['method']
     obj.failure_reason = data['payload']['payment']['entity']['error_reason']
     obj.failure_description = data['payload']['payment']['entity']['error_description']
     obj.save()
@@ -583,7 +645,7 @@ def order_success(request):
             print(obj.user)
             print(obj.shipping_address)
             obj.razorpay_payment_id = payment_id
-            obj.is_paid = True
+            obj.payment_status = "Success"
             obj.save()
             messages.add_message(request,messages.INFO,'Payment is succeded')
         else:   
@@ -595,10 +657,9 @@ def order_success(request):
 
 
 
-
 @csrf_exempt
 def payment_status(request):
-    print("=======payment status=======================================")
+    print("=====++++++++++==payment status=======================================")
     if request.method == "POST":
         print("------------1-------------------")
         try:
@@ -611,8 +672,8 @@ def payment_status(request):
         print(data)
         print("webhuuuuuuuuuuuuok activated")
         
-            
-        # Perform different actions based on the event type
+
+
         event = data.get("event")
         print(event)
 
@@ -625,5 +686,4 @@ def payment_status(request):
     print("=======payment status=======================================")
     return JsonResponse({'status':200})
         
-
 

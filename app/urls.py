@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import home,products,user_login,user_logout,user_register,product_details,add_products,seller_dashboard,delete_product,cart,add_to_cart,add_to_wishlist,wishlist
 from .views import add_address,addresslist,edit_address,delete_address,payment_mode,order_success,payment_status,edit_profile,profile,change_password
-from .views import password_reset,create_new_password,new_password
+from .views import password_reset,create_new_password,new_password,cod,delete_from_cart,delete_from_wishlist,myorder
 
 urlpatterns = [
     path('',home,name="home"),
@@ -34,11 +34,13 @@ urlpatterns = [
 
     #cart
     path('add_to_cart/<int:product_id>',add_to_cart, name="add_to_cart"),
+    path('delete_from_cart/<int:product_id>',delete_from_cart,name="delete_from_cart"),
     path('cart/', cart, name="cart"),
 
     
     #wishlist
     path('add_to_wishlist/<int:product_id>', add_to_wishlist, name="add_to_wishlist"),
+    path('delete_from_wishlist/<int:product_id>',delete_from_wishlist,name="delete_from_wishlist"),
     path('wishlist/', wishlist, name="wishlist"),
 
     
@@ -51,7 +53,12 @@ urlpatterns = [
 
     #payment
     path('payment_mode/<int:address_id>',payment_mode,name='payment_mode'),
+    path('cod/<str:order_id>',cod,name="cod"),
     path('order_success/',order_success,name="order_success"),
-    path('webhook/',payment_status,name='payment_status')
+    path('webhook/',payment_status,name='payment_status'),
+
+
+    #myorders
+    path('myorder',myorder,name="myorder")
    
 ]

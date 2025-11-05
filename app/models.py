@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.template.defaultfilters import slugify
 from django.urls import reverse
 import uuid
+from django.utils import timezone
 
 
 # Create your models here.
@@ -87,22 +88,23 @@ class Order(models.Model):
     user = models.ForeignKey(Customuser,on_delete=models.CASCADE)
     total = models.DecimalField(decimal_places=2,max_digits=10)
     shipping_address = models.CharField(max_length=150)
-    is_paid = models.BooleanField(default=False)
+    pay_status = models.CharField(max_length=30,null=True)
+    pay_mode = models.CharField(max_length=30,null=True)
     razorpay_order_id = models.CharField(max_length=100,null=True,blank=True)
     razorpay_payment_id = models.CharField(max_length=100,null=True,blank=True)
-    failure_description = models.TextField(null=True,blank=True)
     failure_reason = models.CharField(max_length=100,null=True,blank=True)
+    failure_description = models.TextField(null=True,blank=True)
 
     def __str__(self):
         return f"{self.user.get_full_name()}'s order"
     
 
 
+class Myorder(models.Model):
+    user = models.ForeignKey(Customuser,on_delete=models.CASCADE)
+    order = models.ForeignKey(Order,on_delete=models.CASCADE)
+    product = models.ManyToManyField(Product)
+    created_at = models.DateTimeField(default = timezone.now)
 
-# class Myorder(models.Model):
-#     user = models.ForeignKey(Customuser,on_delete=models.CASCADE)
-#     order = models.ForeignKey(Order,on_delete=models.CASCADE)
-#     product = models.ForeignKey(Product,on_delete=models.CASCADE)
-
-#     def __str__(self):
-#         return f"{self.user.get_full_name()}'s payed order list"
+    def __str__(self):
+        return f"{self.user.get_full_name()}'s payed order list"
