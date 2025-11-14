@@ -41,8 +41,7 @@ def all_products():
     }
     return context
 
-
-
+   
 def home(request):
     return render(request,'app/home.html')
 
@@ -98,7 +97,7 @@ def user_logout(request):
     request.session.flush()
     return redirect("home")
 
-#---------------------------------------Profile pages(for user and seller both)---------------------------------------------------------------------------
+#------------------------------Profile pages(for user and seller both)----------------------------------
 
 
 @login_required(login_url="user_login")

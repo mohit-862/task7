@@ -14,10 +14,12 @@ urlpatterns = [
     path('products/',products,name="products"),
 
 
+
     #seller_paths
     path('add_products/',add_products,name="add_products"),
     path('seller_dashboard',seller_dashboard,name="seller_dashboard"),
     path('delete_product/<int:product_id>',delete_product,name="delete_product"),
+
 
 
     #login,logout,register
@@ -26,10 +28,12 @@ urlpatterns = [
     path('user_register/',user_register,name='user_register'),
 
 
+
     #password_reset
     path('password_reset/',password_reset,name='password_reset'),
     path('create_new_password/<uuid:uuid>/<token>',create_new_password,name="create_new_password"),
     path('new_password/<int:user_id>',new_password,name="new_password"),
+
 
 
     #cart
@@ -38,12 +42,14 @@ urlpatterns = [
     path('cart/', cart, name="cart"),
 
     
+
     #wishlist
     path('add_to_wishlist/<int:product_id>', add_to_wishlist, name="add_to_wishlist"),
     path('delete_from_wishlist/<int:product_id>',delete_from_wishlist,name="delete_from_wishlist"),
     path('wishlist/', wishlist, name="wishlist"),
 
     
+
     #addresslist
     path('add_address/', add_address, name="add_address"),
     path('addresslist/', addresslist, name="addresslist"),
@@ -51,11 +57,13 @@ urlpatterns = [
     path('delete_address/<int:address_id>', delete_address, name="delete_address"),
 
 
+
     #payment
     path('payment_mode/<int:address_id>',payment_mode,name='payment_mode'),
     path('cod/<str:order_id>',cod,name="cod"),
     path('order_success/',order_success,name="order_success"),
     path('webhook/',payment_status,name='payment_status'),
+
 
 
     #myorders
